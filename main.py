@@ -4,16 +4,18 @@ from PIL import ImageTk, Image, ImageDraw, ImageOps
 import pyHook
 import pythoncom
 import random
+import screeninfo
+from sound import Sound
 import threading
 import time
 import tkinter
 from tkinter.font import Font
-import screeninfo
-from sound import Sound
+
 
 class KeyBlocker(threading.Thread):
-    def __init__(self, *args, **kwargs):
-        threading.Thread.__init__(self, *args, **kwargs)
+
+    def __init__(self):
+        threading.Thread.__init__(self)
         self.daemon = True
         self.start()
 
@@ -30,9 +32,6 @@ class KeyBlocker(threading.Thread):
             return True
         return False
 
-#Sound.mute()
-keyblocker = KeyBlocker()
-#time.sleep(4)
 
 screen = tkinter.Tk()
 screen.title("")
@@ -95,6 +94,7 @@ bluescreen.create_text(350, 830, anchor = "nw", fill = "white", font = font_tiny
 error_codes_file.close()
 bluescreen.create_image(210, 730, anchor = "nw", image = qr_code)
 
+
 class IncreaseProgress(threading.Thread):
     def __init__(self, *args, **kwargs):
         threading.Thread.__init__(self, *args, **kwargs)
@@ -118,6 +118,7 @@ class IncreaseProgress(threading.Thread):
                 black.wm_attributes("-topmost", False)
                 create_login()
                 break
+
 
 def create_login():
 
@@ -173,6 +174,11 @@ screen.protocol("WM_DELETE_WINDOW", ignore)
 
 screen.bind("<Escape>", lambda _: screen.destroy())
 
-IncreaseProgress()
-#create_login()
-screen.mainloop()
+
+if __name__ == "__main__":
+    #Sound.mute()
+    KeyBlocker()
+    #time.sleep(4)
+
+    IncreaseProgress()
+    screen.mainloop()
