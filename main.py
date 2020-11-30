@@ -1,6 +1,8 @@
+from comtypes import CLSCTX_ALL
 import ctypes
 import os
 from PIL import ImageTk, Image, ImageDraw, ImageOps
+from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 import pyHook
 import pythoncom
 import random
@@ -11,7 +13,6 @@ import tkinter
 from tkinter.font import Font
 
 from config import *
-from sound import Sound
 
 
 class KeyBlocker(threading.Thread):
@@ -88,9 +89,10 @@ class Winfake():
         self.load_assets()
         self.calculate_dimensions()
 
-        self.create_blackscreen()
-        self.create_bluescreen()
-        IncreaseProgress(self)
+        # self.create_blackscreen()
+        # self.create_bluescreen()
+        # IncreaseProgress(self)
+        self.create_lockscreen()
 
         self.screen.mainloop()
 
@@ -110,6 +112,8 @@ class Winfake():
 
     def load_images(self):
         self.qr_code_image = tkinter.PhotoImage(file = f"{IMAGES_PATH}qr_code.png")
+        self.lockscreen_image = ImageTk.PhotoImage(Image.open(f"{IMAGES_PATH}lockscreen.jpg").resize((self.width_primary, self.height_primary)))
+        self.internet_icon = ImageTk.PhotoImage(Image.open(f"{IMAGES_PATH}internet_icon.jpg").resize((32, 32)))
         self.background_image = ImageTk.PhotoImage(Image.open(f"{IMAGES_PATH}background.jfif").resize((self.width_primary, self.height_primary)))
         self.profile_image = self.shaping_profile_image()
 
@@ -157,6 +161,17 @@ class Winfake():
         self.bluescreen.create_text(350, 800, anchor = "nw", fill = "white", font = self.font_tiny, text = "If you call a support person, give them this info:")
         self.bluescreen.create_text(350, 830, anchor = "nw", fill = "white", font = self.font_tiny, text = "Stop code: " + random.choice(self.error_codes).split(" ")[1])
         self.bluescreen.create_image(210, 730, anchor = "nw", image = self.qr_code_image)
+
+    def create_lockscreen(self):
+        self.screen.config(cursor = "arrow")
+        self.lockscreen = tkinter.Canvas(self.screen, bd = 0, width = self.width_primary, height = self.height_primary)
+        self.lockscreen.place(x = -2, y = -2)
+        self.lockscreen.create_image(2, 2, anchor = "nw", image = self.lockscreen_image)
+        self.lockscreen.create_image(self.width_primary*0.96, self.height_primary*0.93, anchor = "nw", image = self.internet_icon)
+        localtime = time.strftime("%H:%M", time.localtime())
+        self.lockscreen.create_text(60, self.height_primary*0.65, anchor = "nw", fill = "white", font = Font(family = "Segoe UI Light", size = 130), text = f"{localtime}")
+        localdate = time.strftime("%A, %d %B", time.localtime())
+        self.lockscreen.create_text(60, self.height_primary*0.8, anchor = "nw", fill = "white", font = Font(family = "Segoe UI Light", size = 60), text = f"{localdate}")
 
     def create_loginscreen(self):
 
@@ -208,7 +223,4 @@ class Winfake():
 
 
 if __name__ == "__main__":
-    #Sound.mute()
-    #time.sleep(4)
-
     Winfake()
