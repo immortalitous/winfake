@@ -200,7 +200,7 @@ class Winfake():
         self.lockscreen.create_image(2, 2, anchor = "nw", image = self.background_image)
         localtime = time.strftime("%H:%M", time.localtime())
         self.lockscreen_localtime_ref = self.lockscreen.create_text(80, self.height_primary*0.7, anchor = "nw", fill = "white", font = Font(family = "Segoe UI Light", size = 110), text = f"{localtime}")
-        localdate = time.strftime("%A, %d %B", time.localtime())
+        localdate = time.strftime("%A, %e. %B", time.localtime())
         self.lockscreen_localdate_ref = self.lockscreen.create_text(80, self.height_primary*0.82, anchor = "nw", fill = "white", font = Font(family = "Segoe UI Light", size = 50), text = f"{localdate}")
         self.lockscreen_ethernet_icon_ref = self.lockscreen.create_text(self.width_primary*0.96, self.height_primary*0.93, anchor = "nw", fill = "white", font = Font(family = "Segoe MDL2 Assets", size = 18), text = "\uE839")
         self.lockscreen.bind("<Button-1>", lambda _: LockscreenAnimation(self))
