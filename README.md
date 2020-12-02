@@ -5,6 +5,9 @@ Fake Windows login screen including a bluescreen simulation.
 
 ## Content
 1. [Features](#1-features)
+2. [Appearance](#2-appearance)
+3. [How-to](#3-how-to)
+4. [Outlook](#4-outlook)
 
 ## 1. Features
 All features are imitated from the original ones included in Windows 10.
@@ -29,6 +32,7 @@ The following non-visible features are also implemented:
     - blocking all keys
     - `LCtrl` will trigger the original lock screen (so that the user can not trigger `LCtrl`+`Alt`+`Del` and open the task manager)
 
+## 2. Appearance
 ![bluescreen](img/bluescreen.png) Fig. 1: Blue Screen
 
 ![loadingscreen](img/loadingscreen.png) Fig. 2: Loading Screen
@@ -37,6 +41,6 @@ The following non-visible features are also implemented:
 
 ![loginscreen](img/loginscreen.png) Fig. 4: Login Screen
 
-## 2. How-to
+## 3. How-to
 
-## 3. Outlook
+## 4. Outlook
