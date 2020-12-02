@@ -1,7 +1,14 @@
 # winfake
-Fake Windows login screen including a bluescreen simulation.
+Fake Windows login screen including a blue screen simulation.
 
 ## Preamble
+
+### Disclaimer
+Winfake is for educational purposes only, intended to show security flaws that are coming with Windows. This tool comes without any warranty.
+
+**You may not use this software for illegal or unethical purposes. This includes activities which give rise to criminal or civil liability.**
+
+**Under no event shall the licensor be responsible for any activities, or misdeeds, by the licensee.**
 
 ## Content
 1. [Features](#1-features)
