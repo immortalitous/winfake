@@ -40,13 +40,13 @@ The following non-visible features are also implemented:
     - `LCtrl` will trigger the original lock screen (so that the user can not trigger `LCtrl`+`Alt`+`Del` and open the task manager)
 
 ## 2. Appearance
-![bluescreen](img/bluescreen.png) Fig. 1: Blue Screen
+![bluescreen](img/bluescreen.png) Fig. 2.1: Blue Screen
 
-![loadingscreen](img/loadingscreen.png) Fig. 2: Loading Screen
+![loadingscreen](img/loadingscreen.png) Fig. 2.2: Loading Screen
 
-![lockscreen](img/lockscreen.png) Fig. 3: Lock Screen
+![lockscreen](img/lockscreen.png) Fig. 2.3: Lock Screen
 
-![loginscreen](img/loginscreen.png) Fig. 4: Login Screen
+![loginscreen](img/loginscreen.png) Fig. 2.4: Login Screen
 
 ## 3. How-to
 
