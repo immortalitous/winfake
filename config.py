@@ -1,2 +1,2 @@
-IMAGES_PATH = "./images/"
-DOCUMENTS_PATH = "./documents/"
+IMAGES_PATH = "./img/"
+DOCUMENTS_PATH = "./etc/"
