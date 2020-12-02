@@ -29,19 +29,43 @@ class BluescreenProgress(threading.Thread):
     def run(self):
         while True:
             time.sleep(random.randint(1, 5))
-            self.progress += random.randint(1, 20)
+            self.progress += random.randint(5, 20)
             if self.progress > 100:
                 self.progress = 100
             self.winfake.bluescreen.delete("progress")
             self.winfake.bluescreen.create_text(210, 620, anchor = "nw", fill = "white", font = self.winfake.font, text = f"{self.progress}% complete", tag = "progress")
             if self.progress == 100:
                 time.sleep(random.randint(1, 5))
-                self.winfake.bluescreen.destroy()
                 self.winfake.blackscreen.wm_attributes("-topmost", True)
+                self.winfake.bluescreen.destroy()
                 time.sleep(random.randint(3, 10))
+                self.winfake.create_loadingscreen()
                 self.winfake.blackscreen.wm_attributes("-topmost", False)
-                self.winfake.create_lockscreen()
                 break
+
+
+class LoadingscreenAnimation(threading.Thread):
+
+    def __init__(self, winfake, *args, **kwargs):
+        threading.Thread.__init__(self, *args, **kwargs)
+        self.daemon = True
+
+        self.winfake = winfake
+        self.frame = 0
+        self.end = random.randint(75, 375)
+
+        self.start()
+
+    def run(self):
+        while self.frame < self.end:
+            time.sleep(0.05)
+            self.frame += 1
+            self.winfake.loadingscreen.itemconfig(self.winfake.loadingscreen_loading_image_ref, image = self.winfake.loading_image_frames[self.frame % 75])
+        self.winfake.blackscreen.wm_attributes("-topmost", True)
+        self.winfake.loadingscreen.destroy()
+        time.sleep(random.randint(1, 3))
+        self.winfake.create_lockscreen()
+        self.winfake.blackscreen.wm_attributes("-topmost", False)
 
 
 class LockscreenAnimation(threading.Thread):
@@ -99,10 +123,9 @@ class Winfake():
         self.load_assets()
         self.calculate_dimensions()
 
-        # self.create_blackscreen()
-        # self.create_bluescreen()
-        # BluescreenProgress(self)
-        self.create_lockscreen()
+        self.create_blackscreen()
+        self.create_bluescreen()
+        BluescreenProgress(self)
 
         self.screen.mainloop()
 
@@ -121,7 +144,9 @@ class Winfake():
         self.entry_font = Font(family = "Calibri", size = 12)
 
     def load_images(self):
-        self.qr_code_image = tkinter.PhotoImage(file = f"{IMAGES_PATH}qr_code.png")
+        self.qr_code_image = ImageTk.PhotoImage(file = f"{IMAGES_PATH}qr_code.png")
+        self.windows_logo_image = ImageTk.PhotoImage(Image.open(f"{IMAGES_PATH}windows_logo.png").resize((300, 300)))
+        self.loading_image_frames = [tkinter.PhotoImage(file = f"{IMAGES_PATH}loading.gif", format = f"gif -index {i}") for i in range(75)]
         self.background_image = ImageTk.PhotoImage(Image.open(f"{IMAGES_PATH}background.jpg").resize((self.width_primary, self.height_primary)))
         self.background_image_blurred = ImageTk.PhotoImage(Image.open(f"{IMAGES_PATH}background.jpg").resize((self.width_primary, self.height_primary)).filter(ImageFilter.GaussianBlur(30)))
         self.profile_image = ImageTk.PhotoImage(Image.open(f"{IMAGES_PATH}user.png").resize((self.width_primary//12, self.width_primary//12)))
@@ -163,7 +188,9 @@ class Winfake():
     def create_loadingscreen(self):
         self.loadingscreen = tkinter.Canvas(self.screen, bd = 0, bg = "#000000", width = self.width_primary, height = self.height_primary)
         self.loadingscreen.place(x = -2, y = -2)
-
+        self.loadingscreen.create_image(self.width_primary/2, self.height_primary*0.1, anchor = "n", image = self.windows_logo_image)
+        self.loadingscreen_loading_image_ref = self.loadingscreen.create_image(self.width_primary/2, self.height_primary*0.8, anchor = "n", image = self.loading_image_frames[0])
+        LoadingscreenAnimation(self)
 
     def create_lockscreen(self):
         self.screen.config(cursor = "arrow")
@@ -201,7 +228,7 @@ class Winfake():
             self.entry_frame.config(background = "#999999")
 
         self.entry_frame = tkinter.Frame(self.screen, border = 2, background = "#999999", relief = "flat")
-        self.entry_frame.place(x = self.width_primary/2, y = self.height_primary/2+120, height = 45, width = 350, anchor = "center")
+        self.entry_frame.place(x = self.width_primary/2, y = self.height_primary/2+100, height = 45, width = 350, anchor = "center")
         self.entry_frame.bind("<Enter>", entry_frame_enter)
         self.entry_frame.bind("<Leave>", entry_frame_leave)
 
