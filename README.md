@@ -15,6 +15,7 @@ Winfake is for educational purposes only, intended to show security flaws that a
 2. [Appearance](#2-appearance)
 3. [How-to](#3-how-to)
 4. [Outlook](#4-outlook)
+5. [See also](#5-see-also)
 
 ## 1. Features
 All features are imitated from the original ones included in Windows 10.
@@ -36,8 +37,9 @@ All features are imitated from the original ones included in Windows 10.
 
 The following non-visible features are also implemented:
 - **Key Blocker:**
-    - blocking all keys
-    - `LCtrl` will trigger the original lock screen (so that the user can not trigger `LCtrl`+`Alt`+`Del` and open the task manager)
+    - blocking all keys before login screen is visible
+    - blocking `LWin` and `LMenu` all time
+    - `Ctrl` will trigger the original lock screen (so that the user can not trigger `Ctrl`+`Alt`+`Del` and open the task manager)
 
 ## 2. Appearance
 ![bluescreen](img/bluescreen.png) Fig. 2.1: Blue Screen
@@ -51,3 +53,11 @@ The following non-visible features are also implemented:
 ## 3. How-to
 
 ## 4. Outlook
+
+## 5. See also
+- **[SharpLocker](https://github.com/Pickfordmatt/SharpLocker) by ([@Pickfordmatt](https://github.com/Pickfordmatt)) and its fork [SharpLocker](https://github.com/3top1a/SharpLocker) by ([@3top1a](https://github.com/3top1a))**  
+SharpLocker helps get current user credentials by popping a fake Windows lock screen, all output is sent to Console which works perfect for Cobalt Strike. It is written in C# to allow for direct execution via memory injection using techniques such as execute-assembly found in Cobalt Strike or others, this method prevents the executable from ever touching disk. It is NOT intended to be compilled and run locally on a device.
+
+- **Videos by [@Seytonic](https://www.youtube.com/channel/UCW6xlqxSY3gGur4PkGPEUeA) on Youtube**  
+[BadUSB: Windows Fake Lock Screen Pwn](https://www.youtube.com/watch?v=JYi_H9n5xjw)  
+[UPDATE: Windows Fake Lock Screen Trick](https://www.youtube.com/watch?v=k5zAneakv3w)
